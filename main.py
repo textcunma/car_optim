@@ -22,5 +22,11 @@ if __name__ == "__main__":
         help="データのURL",
     )
     args = parser.parse_args()
+    parser.add_argument(
+        "--run_path",
+        type=str,
+        default="./Mazda_CdMOBP/Mazda_CdMOBP/bin/win64/mazda_mop.exe",
+        help="評価時の実行ファイルパス名"
+    )
 
     main(args)
