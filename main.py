@@ -7,7 +7,7 @@ import argparse
 from eval import Evaluator
 from download import Downloader
 from load import ExcelLoader
-from optim import multioptim
+from optim import MultiOptim
 
 
 def main(args):
@@ -24,7 +24,7 @@ def main(args):
         element, constraint = ExcelLoader(args.excel_path)()
 
         # 多目的最適化を行う
-        multioptim(element, constraint)
+        MultiOptim(element, constraint)()
 
         # もしevalディレクトリが無ければ作成
         os.makedirs("./eval", exist_ok=True)
