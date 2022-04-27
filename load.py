@@ -12,12 +12,10 @@ class ExcelLoader:
         excel_data = pd.ExcelFile(self.excel_path)  # Excelファイルを読み取る
         sheet_name = excel_data.sheet_names  # シート名を取得
         excel_df = excel_data.parse(sheet_name[1])  # シート名を指定してデータを読み取る
-        element = excel_df.iloc[7:229, 3:8]  # 部品情報(7行~228行、D列~H列)を取得
-        constraint = excel_df.iloc[7:229, 11:65]  # 制約条件(7行~228行、L列~BM列)を取得
+        element = excel_df.iloc[7:229, 3:8]  # 設計変数情報(7行~228行、D列~H列)を取得
+        constraint = excel_df.iloc[7:229, 11:65]  # 制約条件情報(7行~228行、L列~BM列)を取得
 
         return element, constraint
-
-        # element_initial=element.iloc[:, [0]]      # データの呼び出し方の例
 
 
 def main(args):
