@@ -1,7 +1,7 @@
 """
 GNU Lesser General Public License v3.0
 (C) DEAP
-参考:https://github.com/DEAP/deap/blob/master/examples/ga/nsga2.py
+https://github.com/DEAP/deap
 """
 import array
 import random
@@ -10,7 +10,7 @@ from deap import base
 from deap import creator
 from deap import tools
 from deap import benchmarks
-from deap.benchmarks.tools import hypervolume
+from deap import algorithms
 
 
 class MultiOptim:
@@ -43,70 +43,24 @@ class MultiOptim:
         # 基本設定を行う
         self.setting()
 
-        # -------------------------------------------------
-        random.seed(1)
+        #---------------------------------
+        # 参考：https://darden.hatenablog.com/entry/2017/04/18/225459
+        random.seed(42)
 
-        NGEN = 250  # 繰り返し世代数
-        MU = 100  # 集団内の個体数
-        CXPB = 0.9  # 交叉率
+        pop = self.toolbox.population(n=300)
 
-        # 世代ループ中のログに何を出力するかの設定
+        hof = tools.HallOfFame(1, similar=np.array_equal)
+
         stats = tools.Statistics(lambda ind: ind.fitness.values)
-        stats.register("min", np.min, axis=0)
-        stats.register("max", np.max, axis=0)
+        stats.register("avg", np.mean)
+        stats.register("std", np.std)
+        stats.register("min", np.min)
+        stats.register("max", np.max)
 
-        logbook = tools.Logbook()
-        logbook.header = "gen", "evals", "std", "min", "avg", "max"
+        algorithms.eaSimple(pop, self.toolbox, cxpb=0.5, mutpb=0.2, ngen=40, stats=stats,halloffame=hof)
 
-        # 第一世代の生成
-        pop = self.toolbox.population(n=MU)
-        pop_init = pop[:]
-        invalid_ind = [ind for ind in pop if not ind.fitness.valid]
-        fitnesses = self.toolbox.map(self.toolbox.evaluate, invalid_ind)
-        for ind, fit in zip(invalid_ind, fitnesses):
-            ind.fitness.values = fit
-        pop = self.toolbox.select(pop, len(pop))
+        return pop, stats, hof
 
-        record = stats.compile(pop)
-        logbook.record(gen=0, evals=len(invalid_ind), **record)
-        print(logbook.stream)
-
-        # 最適計算の実行
-        for gen in range(1, NGEN):
-            # 子母集団生成
-            offspring = tools.selTournamentDCD(pop, len(pop))
-            offspring = [self.toolbox.clone(ind) for ind in offspring]
-
-            # 交叉と突然変異
-            for ind1, ind2 in zip(offspring[::2], offspring[1::2]):
-                # 交叉させる個体を選択
-                if random.random() <= CXPB:
-                    # 交叉
-                    self.toolbox.mate(ind1, ind2)
-
-                # 突然変異
-                self.toolbox.mutate(ind1)
-                self.toolbox.mutate(ind2)
-
-                # 交叉と突然変異させた個体は適応度を削除する
-                del ind1.fitness.values, ind2.fitness.values
-
-            # 適応度を削除した個体について適応度の再評価を行う
-            invalid_ind = [ind for ind in offspring if not ind.fitness.valid]
-            fitnesses = self.toolbox.map(self.toolbox.evaluate, invalid_ind)
-            for ind, fit in zip(invalid_ind, fitnesses):
-                ind.fitness.values = fit
-
-            # 次世代を選択
-            pop = self.toolbox.select(pop + offspring, MU)
-            record = stats.compile(pop)
-            logbook.record(gen=gen, evals=len(invalid_ind), **record)
-            print(logbook.stream)
-
-        # 最終世代のハイパーボリュームを出力
-        print("Final population hypervolume is %f" % hypervolume(pop, [11.0, 11.0]))
-
-        return pop, pop_init, logbook
 
     def setting(self):
         """基本設定を行うメソッド"""
@@ -120,6 +74,10 @@ class MultiOptim:
 
         # 遺伝子数を設定    遺伝子数 = 設計変数 の数???
         NDIM = len(self.element.iloc[:, [0]])
+
+        # 最大値と最小値をnumpyで設定
+        lower=np.array(self.element.iloc[:, [1]])
+        upper=np.array(self.element.iloc[:, [2]])
 
         # サンプルコード↓
         # 遺伝子生成メソッド
@@ -138,7 +96,8 @@ class MultiOptim:
             """
             param: n: 遺伝子数
             """
-            gene = [0] * n  # 遺伝子リスト
+            
+            gene = np.empty(n)  # 遺伝子numpy配列
             for i in range(n):
                 rangelist = list(self.element.iloc[:, [4]].iloc[i])
                 gene[i]=random.choice(rangelist)   # 範囲リストからランダム選択
@@ -150,8 +109,8 @@ class MultiOptim:
         # 個体を生成する関数を設定
         self.toolbox.register(
             "individual", 
-            tools.initIterate, 
-            creator.Individual, 
+            np.ndarray,
+            creator.Individual,
             self.toolbox.attr_float
         )
 
@@ -170,8 +129,8 @@ class MultiOptim:
         self.toolbox.register(
             "mate", 
             tools.cxSimulatedBinaryBounded, 
-            low=0.0,        ### ????
-            up=1.0,         ### ????
+            low=lower,        ### どうかな????
+            up=upper,         ### どうかな????
             eta=20.0
         )
 
@@ -179,8 +138,8 @@ class MultiOptim:
         self.toolbox.register(
             "mutate",
             tools.mutPolynomialBounded,
-            low=0.0,        ### ???
-            up=1.0,         ### ???
+            low=lower,        ### どうかな???
+            up=upper,         ### どうかな???
             eta=20.0,
             indpb=1.0 / NDIM,
         )
