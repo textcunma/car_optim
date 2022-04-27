@@ -27,18 +27,23 @@ class MultiOptim:
     
     def __call__(self):
         def objective(vars):    # vars -> len=222
-            x1 = vars[0]
-            x2 = vars[1]
-            return [2*(x1**2) + x2**2, -x1**2 -2*(x2**2)]       ##???????
+            return sum(vars)
 
         var_len=len(self.element.iloc[:, [0]])
 
         # 222変数2目的の問題
-        problem = Problem(var_len, 2)
+        # problem = Problem(var_len, 2)
+
+        # 222変数1目的の問題
+        problem = Problem(var_len, 1)
 
         # 最小化、最大化を設定
-        problem.directions[0] = Problem.MINIMIZE
-        problem.directions[1] = Problem.MAXIMIZE
+        # problem.directions[0] = Problem.MINIMIZE
+        # problem.directions[1] = Problem.MAXIMIZE
+        problem.directions[:] = Problem.MINIMIZE
+
+        # 制約条件を設定
+        problem.constraints[:] = "<0"   # 0未満ならばペナルティ
 
         design_var=[]
         for i in range(var_len):
@@ -58,9 +63,11 @@ class MultiOptim:
 
         # 非劣解をとりだす
         nondominated_solutions = nondominated(algorithm.result)
+        for i in nondominated_solutions[0].variables:
+            print(i)
 
         # グラフを描画
-        plt.scatter([s.objectives[0] for s in nondominated_solutions if s.feasible],
-                [s.objectives[1] for s in nondominated_solutions if s.feasible])
-        plt.show()
-        print()
+        # plt.scatter([s.objectives[0] for s in nondominated_solutions if s.feasible],
+        #         [s.objectives[1] for s in nondominated_solutions if s.feasible])
+        # plt.show()
+        # print()
