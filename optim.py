@@ -1,5 +1,5 @@
 from platypus import NSGAII, SMPSO, Problem, Real, nondominated
-
+import time
 
 class MultiOptim:
     """
@@ -45,7 +45,7 @@ class MultiOptim:
             # RealはType.pyの内部コードをいじっている（詳細は最下部）
             design_var.append(Real(element))
 
-        # 決定変数の範囲を設定
+        # 設計変数の範囲を設定
         problem.types[:] = design_var
 
         # 目的関数を設定
@@ -56,9 +56,12 @@ class MultiOptim:
             algorithm = NSGAII(problem, population_size=population_size)
         elif args.algorithm == "SMPSO":
             algorithm = SMPSO(problem, population_size=population_size)
-
+        
         # 実行
+        sp=time.time()  # 開始時間
         algorithm.run(1000)
+        gp=time.time()  # 終了時間
+        print("algorithm:", args.algorithm, "time:", gp-sp,"[sec]")
 
         # パレート解を抽出
         nondominated_solutions = nondominated(algorithm.result)
