@@ -1,13 +1,10 @@
-"""
-多目的変数最適化　メイン関数
-"""
 import os
 import glob
 import argparse
 from eval import Evaluator
-from download import Downloader
 from load import ExcelLoader
 from optim import MultiOptim
+from download import Downloader
 
 
 def main(args):
@@ -16,18 +13,33 @@ def main(args):
         Downloader(args.url)()
 
     if args.mode == "sample":
-        # サンプルデータを用いて評価を実行
+        """サンプルデータを用いて評価を実行"""
         Evaluator(args.sample_path, args.exe_path)()
 
     elif args.mode == "real":
+        """実データを用いて評価を実行"""
         # Excelファイルを読み取る
         element, constraint = ExcelLoader(args.excel_path)()
 
+        # 設計変数の種類数  var_len=222
+        var_len = len(element.iloc[:, [0]])
+
         # 多目的最適化を行う
-        MultiOptim(element, constraint)()
+        answer = MultiOptim(element, constraint)(args.population_size, var_len)
 
         # もしevalディレクトリが無ければ作成
         os.makedirs("./eval", exist_ok=True)
+
+        # 回答ファイルを作成
+        with open("./eval/pop_vars_eval.txt", "w") as f:
+            for i in range(args.population_size):
+                lines = ""
+                for j in range(var_len):
+                    tmp = answer[i].variables[j]
+                    lines += str(tmp) + "\t"  # 列はタブで区切る
+
+                # 末尾の\tを削除、改行を追加
+                f.writelines(lines[:-1] + "\r\n")
 
         # 評価を実行
         Evaluator(args.input_path, args.exe_path)()
@@ -67,7 +79,7 @@ if __name__ == "__main__":
         type=str,
         choices=["sample", "real"],
         default="real",
-        help="モード(sample:サンプルを用いた評価 もしくは real:本番)",
+        help="モード(sample:サンプルデータ、real:実データ)",
     )
     parser.add_argument(
         "--excel_path",
@@ -75,7 +87,23 @@ if __name__ == "__main__":
         default="./Mazda_CdMOBP/Info_Mazda_CdMOBP.xlsx",
         help="データが包含されたExcelファイルのパス名",
     )
+    parser.add_argument(
+        "--population_size",
+        type=int,
+        default=48,
+        help="世代数",
+    )
 
     args = parser.parse_args()
 
     main(args)
+
+
+# データ読み込み(サンプルコード)：回答記述方法を確認するために作成
+# import csv
+# with open("./Mazda_CdMOBP/Mazda_CdMOBP/sample/pop_vars_eval.txt") as f:
+#     reader = csv.reader(f, delimiter='\t')
+#     for row in reader:
+#         for i in range(len(row)):
+#             row[i]=row[i].replace(" ","")
+#         print(row)
