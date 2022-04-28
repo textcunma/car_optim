@@ -42,6 +42,17 @@ def main(args):
         # 評価を実行
         Evaluator(args.input_path, args.exe_path)()
 
+        # 結果ファイル(目的関数データ)を読み込む
+        with open("./eval/pop_objs_eval.txt", "r") as f:
+            lines = f.readlines()
+            print(lines[0].split("\t")[0])  # 総重量に関する目的関数出力値を表示
+            """
+            lines[0]    : 3台の車両の総重量
+            lines[1]    : 共通ゲージパーツの数
+            lines[2]    : 共通ゲージパーツの数
+            lines[3]    : LVの重量
+            lines[4]    : SVの重量
+            """
     return
 
 
