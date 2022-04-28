@@ -1,11 +1,11 @@
-from platypus import NSGAII, Problem, Real
+from platypus import NSGAII, SMPSO, Problem, Real, nondominated
 
 
 class MultiOptim:
     """
-    多目的最適化を行うメソッド
+    多目的最適化
     目的関数1: 総重量(最小化)
-    目的関数2: 共通部品数(最大化)   <= 今回は省略
+    ※ 目的関数2: 共通部品数(最大化) <== 今回は省略(実質、単目的最適化)
     """
 
     def __init__(self, element, constraint):
@@ -24,7 +24,7 @@ class MultiOptim:
         self.element = element
         self.constraint = constraint
 
-    def __call__(self, population_size, var_len):
+    def __call__(self, population_size, var_len, args):
         # 目的関数(総和を最小化する)
         def objective(vars):  # vars -> len=222
             return sum(vars)
@@ -35,8 +35,8 @@ class MultiOptim:
         # 最小化を設定
         problem.directions[:] = Problem.MINIMIZE
 
-        # 制約条件を設定
-        problem.constraints[:] = "<0"  # 0未満ならばペナルティ
+        # 制約条件を設定(0以上でなければいけない)
+        problem.constraints[:] = ">=0"
 
         design_var = []
         for i in range(var_len):
@@ -51,11 +51,19 @@ class MultiOptim:
         # 目的関数を設定
         problem.function = objective
 
-        # アルゴリズムを設定し, 探索実行
-        algorithm = NSGAII(problem, population_size=population_size)
+        # NSGA-Ⅱアルゴリズムを設定
+        if args.algorithm == "NSGAII":
+            algorithm = NSGAII(problem, population_size=population_size)
+        elif args.algorithm == "SMPSO":
+            algorithm = SMPSO(problem, population_size=population_size)
+
+        # 実行
         algorithm.run(1000)
 
-        return algorithm.result  # population_size分の解が返ってくる
+        # パレート解を抽出
+        nondominated_solutions = nondominated(algorithm.result)
+
+        return nondominated_solutions
 
 
 # 改造したRealクラスを以下に示す

@@ -25,21 +25,19 @@ def main(args):
         var_len = len(element.iloc[:, [0]])
 
         # 多目的最適化を行う
-        answer = MultiOptim(element, constraint)(args.population_size, var_len)
+        answer = MultiOptim(element, constraint)(args.population_size, var_len, args)
 
         # もしevalディレクトリが無ければ作成
         os.makedirs("./eval", exist_ok=True)
 
         # 回答ファイルを作成
         with open("./eval/pop_vars_eval.txt", "w") as f:
-            for i in range(args.population_size):
-                lines = ""
-                for j in range(var_len):
-                    tmp = answer[i].variables[j]
-                    lines += str(tmp) + "\t"  # 列はタブで区切る
-
-                # 末尾の\tを削除、改行を追加
-                f.writelines(lines[:-1] + "\r\n")
+            lines = ""
+            for j in range(var_len):
+                tmp = answer[0].variables[j]
+                lines += str(tmp) + "\t"  # 列はタブで区切る
+            # 末尾の\tを削除、改行を追加
+            f.writelines(lines[:-1] + "\r\n")
 
         # 評価を実行
         Evaluator(args.input_path, args.exe_path)()
@@ -92,6 +90,13 @@ if __name__ == "__main__":
         type=int,
         default=48,
         help="世代数",
+    )
+    parser.add_argument(
+        "--algorithm",
+        type=str,
+        choices=["NSGAII", "SMPSO"],
+        default="NSGAII",
+        help="最適化アルゴリズム",
     )
 
     args = parser.parse_args()
